@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F4F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="両毛線 · Tra tàu">
+  <title>両毛線 · Tra tàu</title>
+  <style>
+    /* ========================================================================
+       DESIGN TOKENS & RESET
+       Zero external libraries — crisp Japanese transit mobile-first aesthetic
+       ======================================================================== */
+    :root {
+      --bg-page: #F2F4F7;
+      --bg-header: rgba(242, 244, 247, 0.92);
+      --bg-card: #FFFFFF;
+      --bg-row: #F8FAFC;
+
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #94A3B8;
+
+      --border-light: #E2E8F0;
+      --border-subtle: #F1F5F9;
+
+      /* JR East signature green */
+      --jr-green: #008C45;
+      --jr-green-dark: #006E36;
+      --jr-green-soft: #ECFDF3;
+      --jr-green-border: #BBF7D0;
+
+      /* Departed / late train red (1 <= Y <= 10 min) */
+      --late-red: #D32F2F;
+      --late-red-dark: #991B1B;
+      --late-red-bg: #FFF5F5;
+      --late-red-border: #FECACA;
+
+      /* Custom time & next-day blue */
+      --accent-blue: #2563EB;
+      --accent-blue-bg: #EFF6FF;
+      --accent-blue-border: #BFDBFE;
+
+      --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.045), 0 1px 2px rgba(15, 23, 42, 0.03);
+      --radius-card: 16px;
+      --radius-row: 11px;
+      --radius-pill: 999px;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans",
+        "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      min-height: 100dvh;
+      background-color: var(--bg-page);
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* ========================================================================
+       APP SHELL (Mobile-first, centered cleanly on tablets/desktops)
+       ======================================================================== */
+    .app-shell {
+      width: 100%;
+      max-width: 460px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* ========================================================================
+       COMPACT STICKY HEADER & TIME CONTROL
+       ======================================================================== */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--bg-header);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--jr-green);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 140, 69, 0.24);
+    }
+
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 2px;
+    }
+
+    .app-title {
+      font-size: 16px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .schedule-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--jr-green-dark);
+      background: var(--jr-green-soft);
+      border: 1px solid var(--jr-green-border);
+      border-radius: var(--radius-pill);
+      padding: 1px 7px;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .clock-wrap {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .clock-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .clock-zone {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Compact Time Picker + Snap-to-Live Row */
+    .time-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 5px 7px 5px 11px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+
+    .time-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .time-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .time-input {
+      appearance: none;
+      -webkit-appearance: none;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      background: var(--bg-page);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 5px 9px;
+      min-height: 34px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .time-input:focus {
+      outline: none;
+      border-color: var(--jr-green);
+      background: #FFFFFF;
+    }
+
+    .time-input.is-custom {
+      background: var(--accent-blue-bg);
+      border-color: var(--accent-blue-border);
+      color: var(--accent-blue);
+    }
+
+    .now-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .now-btn:active {
+      transform: scale(0.95);
+    }
+
+    .now-btn.is-live {
+      background: var(--jr-green-soft);
+      border: 1px solid var(--jr-green-border);
+      color: var(--jr-green-dark);
+    }
+
+    .now-btn:not(.is-live) {
+      background: var(--jr-green);
+      border: 1px solid var(--jr-green);
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0, 140, 69, 0.22);
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .now-btn.is-live .live-dot {
+      background: var(--jr-green);
+      animation: pulse-live 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulse-live {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.35;
+        transform: scale(0.75);
+      }
+    }
+
+    /* ========================================================================
+       MAIN CONTENT & ROUTE CARDS
+       ======================================================================== */
+    .main-content {
+      padding: 12px 12px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .route-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .route-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .route-bar {
+      width: 4px;
+      height: 22px;
+      border-radius: 4px;
+      background: var(--jr-green);
+      flex-shrink: 0;
+    }
+
+    .route-title {
+      font-size: 17px;
+      font-weight: 750;
+      letter-spacing: 0.01em;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    /* Prominent tap-friendly Reverse Button ⇄ */
+    .swap-btn {
+      min-width: 42px;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid var(--jr-green-border);
+      background: var(--jr-green-soft);
+      color: var(--jr-green-dark);
+      font-family: var(--font-sans);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, background-color 0.15s ease;
+    }
+
+    .swap-btn:hover {
+      background: #DCFCE7;
+    }
+
+    .swap-btn:active {
+      transform: scale(0.92);
+    }
+
+    .swap-icon {
+      display: inline-block;
+      transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .swap-btn.is-flipped .swap-icon {
+      transform: rotate(180deg);
+    }
+
+    .line-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2.5px 8px;
+      border-radius: var(--radius-pill);
+      white-space: nowrap;
+      flex-shrink: 0;
+      background: var(--jr-green-soft);
+      color: var(--jr-green-dark);
+      border: 1px solid var(--jr-green-border);
+    }
+
+    /* ========================================================================
+       TRAIN LIST ROWS
+       Strict format: {Giờ đi} - {Ga đi} - {Ga đến} {Giờ đến}   (Trạng thái)
+       ======================================================================== */
+    .train-list {
+      list-style: none;
+      padding: 8px 9px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+
+    .train-list.is-swapping {
+      opacity: 0.35;
+      transform: translateY(2px);
+    }
+
+    .train-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 9px 10px 9px 11px;
+      border-radius: var(--radius-row);
+      background: var(--bg-row);
+      border: 1px solid transparent;
+      border-left: 3.5px solid transparent;
+      min-height: 42px;
+    }
+
+    /* First catchable upcoming train (diff >= 0): JR East green highlight */
+    .train-row.is-next {
+      background: var(--jr-green-soft);
+      border-color: var(--jr-green-border);
+      border-left: 4px solid var(--jr-green);
+    }
+
+    /* Recently departed train (1 <= Y <= 10 min ago): subtle red tint + red left border */
+    .train-row.is-overdue {
+      background: var(--late-red-bg);
+      border-color: var(--late-red-border);
+      border-left: 4px solid var(--late-red);
+    }
+
+    /* Left block: {Giờ đi} - {Ga đi} - {Ga đến} {Giờ đến} */
+    .train-schedule {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 3.5px;
+      white-space: nowrap;
+      line-height: 1.25;
+      min-width: 0;
+    }
+
+    .dep-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .train-row.is-next .dep-time {
+      color: var(--jr-green-dark);
+    }
+
+    .train-row.is-overdue .dep-time {
+      color: var(--late-red-dark);
+    }
+
+    .sep {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .station-name {
+      font-size: 13.5px;
+      font-weight: 650;
+      color: var(--text-primary);
+    }
+
+    .train-row.is-overdue .station-name {
+      color: var(--late-red-dark);
+    }
+
+    .arr-time {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 13.5px;
+      font-weight: 650;
+      color: var(--text-secondary);
+      margin-left: 2px;
+      letter-spacing: -0.02em;
+    }
+
+    .train-row.is-next .arr-time {
+      color: var(--text-primary);
+    }
+
+    .train-row.is-overdue .arr-time {
+      color: var(--late-red-dark);
+    }
+
+    /* Right block: [Mai?] + status badge */
+    .train-status-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tomorrow-tag {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      background: var(--accent-blue-bg);
+      border: 1px solid var(--accent-blue-border);
+      border-radius: 5px;
+      padding: 1px 4.5px;
+      line-height: 1.3;
+    }
+
+    .status-text {
+      font-size: 12px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      letter-spacing: -0.015em;
+    }
+
+    .train-row.is-next .status-text {
+      color: var(--jr-green-dark);
+      font-weight: 750;
+    }
+
+    .status-text.is-now {
+      color: var(--jr-green);
+      font-weight: 800;
+    }
+
+    .status-text.is-overdue {
+      color: var(--late-red);
+      font-weight: 750;
+    }
+
+    /* Compact fine-tuning for narrow phones (360px - 390px iPhone mini/SE) */
+    @media (max-width: 390px) {
+      .main-content {
+        padding: 10px 9px 6px;
+      }
+      .train-row {
+        padding: 8.5px 8px 8.5px 9px;
+        gap: 4px;
+      }
+      .train-schedule {
+        gap: 2.5px;
+      }
+      .dep-time {
+        font-size: 13.5px;
+      }
+      .station-name,
+      .arr-time {
+        font-size: 12.5px;
+      }
+      .status-text {
+        font-size: 11.5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- ==================================================================
+         COMPACT STICKY HEADER
+         ================================================================== -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <!-- Minimal JR Train Icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="14" rx="3"></rect>
+              <path d="M4 11h16"></path>
+              <path d="M12 3v8"></path>
+              <circle cx="8.5" cy="14" r="1" fill="currentColor" stroke="none"></circle>
+              <circle cx="15.5" cy="14" r="1" fill="currentColor" stroke="none"></circle>
+              <path d="M8 17l-2 4"></path>
+              <path d="M16 17l2 4"></path>
+              <path d="M7.5 19.5h9"></path>
+            </svg>
+          </div>
+          <div class="brand-info">
+            <h1 class="app-title">両毛線 · Tra tàu</h1>
+            <span id="schedule-badge" class="schedule-badge">Đang tải...</span>
+          </div>
+        </div>
+
+        <div class="clock-wrap" aria-live="off">
+          <div id="jst-clock" class="clock-time">--:--:--</div>
+          <div class="clock-zone">Giờ Nhật (JST)</div>
+        </div>
+      </div>
+
+      <!-- Compact Time Picker + Snap-to-Live Button -->
+      <div class="time-controls">
+        <div class="time-field">
+          <label for="time-picker" class="time-label">Chọn giờ</label>
+          <input
+            type="time"
+            id="time-picker"
+            class="time-input"
+            aria-label="Chọn giờ tra cứu tàu"
+          >
+        </div>
+        <button type="button" id="now-btn" class="now-btn is-live" aria-pressed="true">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Hiện tại</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================================================================
+         TWO FIXED ROUTE CARDS WITH SWAP BUTTON (KANJI STATION NAMES)
+         ================================================================== -->
+    <main class="main-content">
+      <!-- Card 1: 前橋 → 高崎 (⇄ toggles to 高崎 → 前橋) -->
+      <section class="route-card" aria-labelledby="title-card-1">
+        <div class="card-header">
+          <div class="route-title-wrap">
+            <span class="route-bar" aria-hidden="true"></span>
+            <h2 id="title-card-1" class="route-title">前橋 → 高崎</h2>
+            <button
+              type="button"
+              id="swap-card-1"
+              class="swap-btn"
+              aria-label="Đảo chiều tuyến 前橋 và 高崎"
+              title="Đảo chiều"
+            >
+              <span class="swap-icon" aria-hidden="true">⇄</span>
+            </button>
+          </div>
+          <span class="line-tag">JR 両毛線</span>
+        </div>
+        <ul id="list-card-1" class="train-list"></ul>
+      </section>
+
+      <!-- Card 2: 前橋 → 伊勢崎 (⇄ toggles to 伊勢崎 → 前橋) -->
+      <section class="route-card" aria-labelledby="title-card-2">
+        <div class="card-header">
+          <div class="route-title-wrap">
+            <span class="route-bar" aria-hidden="true"></span>
+            <h2 id="title-card-2" class="route-title">前橋 → 伊勢崎</h2>
+            <button
+              type="button"
+              id="swap-card-2"
+              class="swap-btn"
+              aria-label="Đảo chiều tuyến 前橋 và 伊勢崎"
+              title="Đảo chiều"
+            >
+              <span class="swap-icon" aria-hidden="true">⇄</span>
+            </button>
+          </div>
+          <span class="line-tag">JR 両毛線</span>
+        </div>
+        <ul id="list-card-2" class="train-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    "use strict";
+
+    /* ========================================================================
+       JR RYOMO LINE (両毛線) 2026 TIMETABLES
+       Chuyến sau 00:00 thuộc lịch chạy cuối ngày được lưu dạng "24:06" để
+       sắp xếp và đếm ngược chính xác qua mốc nửa đêm (hiển thị thành "00:06").
+       ======================================================================== */
+    const TIMETABLES = {
+      // 1. 前橋 → 高崎 (+15 phút) — Lịch JR East 2026 chính xác
+      mae_taka: {
+        from: "前橋",
+        to: "高崎",
+        duration: 15,
+        weekday: [
+          "05:31","05:49","06:00","06:24","06:33","06:41","06:54","07:08","07:17","07:36",
+          "07:53","08:06","08:26","08:43","08:50","09:12","09:37","10:05","10:22","10:37",
+          "11:05","11:34","12:05","12:35","13:05","13:33","14:05","14:35","15:05","15:32",
+          "16:00","16:13","16:31","16:52","17:16","17:41","18:05","18:15","18:23","18:45",
+          "19:01","19:13","19:21","19:37","20:04","20:28","20:40","20:55","21:09","21:24",
+          "21:49","22:14","22:37","23:17"
+        ],
+        weekend: [
+          "05:31","05:49","06:00","06:16","06:24","06:41","06:54","07:08","07:17","07:36",
+          "07:53","07:58","08:06","08:26","08:43","08:50","09:12","09:37","10:05","10:22",
+          "10:37","11:05","11:34","12:05","12:35","13:05","13:33","14:05","14:35","15:05",
+          "15:32","16:00","16:13","16:31","16:52","17:16","17:41","18:05","18:15","18:23",
+          "18:45","19:01","19:13","19:21","19:37","20:04","20:28","20:40","20:55","21:09",
+          "21:24","21:49","22:14","22:37","23:17"
+        ]
+      },
+
+      // 2. 高崎 → 前橋 (+15 phút) — Gồm chuyến cuối 00:06 (lưu dạng 24:06)
+      taka_mae: {
+        from: "高崎",
+        to: "前橋",
+        duration: 15,
+        weekday: [
+          "05:25","06:10","06:26","06:38","06:53","07:03","07:17","07:39","07:52","08:07",
+          "08:18","08:36","09:06","09:28","09:43","10:07","10:37","11:10","11:37","12:14",
+          "12:37","13:09","13:37","14:07","14:37","15:08","15:28","15:43","16:07","16:28",
+          "16:58","17:22","17:37","17:57","18:17","18:36","19:06","19:31","19:44","20:01",
+          "20:11","20:39","21:05","21:16","21:42","21:55","22:16","22:33","22:52","23:17",
+          "23:45","24:06"
+        ],
+        weekend: [
+          "05:25","06:10","06:26","06:38","06:53","07:03","07:17","07:39","07:52","08:07",
+          "08:18","08:36","09:06","09:28","09:43","10:07","10:37","11:10","11:37","12:14",
+          "12:37","13:09","13:37","14:07","14:37","15:08","15:28","15:43","16:07","16:28",
+          "16:58","17:22","17:37","17:57","18:17","18:36","19:06","19:31","19:44","20:01",
+          "20:11","20:39","21:05","21:16","21:42","21:55","22:16","22:33","22:52","23:17",
+          "23:45","24:06"
+        ]
+      },
+
+      // 3. 前橋 → 伊勢崎 (+14 phút)
+      mae_ise: {
+        from: "前橋",
+        to: "伊勢崎",
+        duration: 14,
+        weekday: [
+          "05:40","06:24","06:41","07:08","07:18","07:34","07:54","08:08","08:22","08:52",
+          "09:23","09:57","10:22","10:52","11:24","11:52","12:29","12:52","13:23","13:52",
+          "14:22","14:51","15:23","15:43","15:59","16:22","16:44","17:13","17:37","17:52",
+          "18:14","18:32","18:53","19:22","19:45","19:58","20:28","20:53","21:32","21:58",
+          "22:48","23:32"
+        ],
+        weekend: [
+          "05:40","06:24","06:41","07:08","07:18","07:34","07:54","08:08","08:22","08:52",
+          "09:23","09:57","10:22","10:52","11:24","11:52","12:29","12:52","13:23","13:52",
+          "14:22","14:51","15:23","15:43","15:59","16:22","16:44","17:13","17:37","17:52",
+          "18:14","18:32","18:53","19:22","19:45","19:58","20:28","20:53","21:32","21:58",
+          "22:48","23:32"
+        ]
+      },
+
+      // 4. 伊勢崎 → 前橋 (+14 phút)
+      ise_mae: {
+        from: "伊勢崎",
+        to: "前橋",
+        duration: 14,
+        weekday: [
+          "05:34","06:09","06:40","07:01","07:21","07:35","07:50","08:11","08:28","08:55",
+          "09:23","09:50","10:23","10:50","11:19","11:50","12:20","12:50","13:19","13:50",
+          "14:20","14:50","15:18","15:45","16:16","16:37","17:01","17:26","17:50","18:07",
+          "18:28","18:46","19:07","19:22","19:48","20:11","20:24","20:54","21:33","22:00",
+          "23:03"
+        ],
+        weekend: [
+          "05:34","06:09","06:40","07:01","07:21","07:35","07:50","08:11","08:28","08:55",
+          "09:23","09:50","10:23","10:50","11:19","11:50","12:20","12:50","13:19","13:50",
+          "14:20","14:50","15:18","15:45","16:16","16:37","17:01","17:26","17:50","18:07",
+          "18:28","18:46","19:07","19:22","19:48","20:11","20:24","20:54","21:33","22:00",
+          "23:03"
+        ]
+      }
+    };
+
+    /* ========================================================================
+       CONFIGURATION & JAPAN PUBLIC HOLIDAYS (2026)
+       ======================================================================== */
+    const MAX_LATE_MINUTES = 10; // Giữ chuyến trễ 1..10 phút; Y > 10 phút thì ẩn ngay
+    const TRAINS_PER_CARD = 5;
+
+    // Ngày lễ quốc gia Nhật Bản 2026 để tự động chuyển lịch Cuối tuần - Lễ
+    const JP_HOLIDAYS_2026 = new Set([
+      "2026-01-01", "2026-01-12", "2026-02-11", "2026-02-23", "2026-03-20",
+      "2026-04-29", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06",
+      "2026-07-20", "2026-08-11", "2026-09-21", "2026-09-22", "2026-09-23",
+      "2026-10-12", "2026-11-03", "2026-11-23"
+    ]);
+
+    const state = {
+      isLive: true,
+      customMinutes: null,  // Integer phút (0..1439) khi chọn giờ thủ công
+      card1Reversed: false, // false: 前橋 → 高崎 | true: 高崎 → 前橋
+      card2Reversed: false, // false: 前橋 → 伊勢崎 | true: 伊勢崎 → 前橋
+      lastListKey: ""       // Cache key để tránh vẽ lại DOM không cần thiết mỗi giây
+    };
+
+    const dom = {
+      clock: document.getElementById("jst-clock"),
+      scheduleBadge: document.getElementById("schedule-badge"),
+      timePicker: document.getElementById("time-picker"),
+      nowBtn: document.getElementById("now-btn"),
+      card1: {
+        title: document.getElementById("title-card-1"),
+        swapBtn: document.getElementById("swap-card-1"),
+        list: document.getElementById("list-card-1")
+      },
+      card2: {
+        title: document.getElementById("title-card-2"),
+        swapBtn: document.getElementById("swap-card-2"),
+        list: document.getElementById("list-card-2")
+      }
+    };
+
+    /* ========================================================================
+       TIME & CALENDAR UTILITIES (Asia/Tokyo)
+       ======================================================================== */
+    const jstFormatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+
+    const WEEKDAY_INDEX = {
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6
+    };
+
+    function pad2(num) {
+      return String(num).padStart(2, "0");
+    }
+
+    /**
+     * Trả về chuỗi YYYY-MM-DD cộng/trừ số ngày offset tính theo giờ JST.
+     */
+    function getJSTDateKey(offsetDays) {
+      const target = new Date(Date.now() + 9 * 60 * 60 * 1000 + offsetDays * 86400000);
+      return `${target.getUTCFullYear()}-${pad2(target.getUTCMonth() + 1)}-${pad2(target.getUTCDate())}`;
+    }
+
+    /**
+     * Lấy thời gian Nhật Bản hiện tại (Asia/Tokyo) kèm fallback UTC+9 an toàn.
+     */
+    function getJSTNow() {
+      try {
+        const parts = jstFormatter.formatToParts(new Date());
+        const map = {};
+        for (const p of parts) {
+          map[p.type] = p.value;
+        }
+        let hours = parseInt(map.hour, 10);
+        if (hours === 24) hours = 0;
+        const minutes = parseInt(map.minute, 10);
+        const seconds = parseInt(map.second, 10);
+        const dayIndex = WEEKDAY_INDEX[map.weekday] ?? 1;
+        const dateKey = `${map.year}-${map.month}-${map.day}`;
+
+        return {
+          hours,
+          minutes,
+          seconds,
+          totalMinutes: hours * 60 + minutes,
+          dayIndex,
+          dateKey,
+          isHolidayOrWeekend: dayIndex === 0 || dayIndex === 6 || JP_HOLIDAYS_2026.has(dateKey),
+          hhmm: `${pad2(hours)}:${pad2(minutes)}`,
+          hhmmss: `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
+        };
+      } catch (err) {
+        const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        const hours = jst.getUTCHours();
+        const minutes = jst.getUTCMinutes();
+        const seconds = jst.getUTCSeconds();
+        const dayIndex = jst.getUTCDay();
+        const dateKey = `${jst.getUTCFullYear()}-${pad2(jst.getUTCMonth() + 1)}-${pad2(jst.getUTCDate())}`;
+        return {
+          hours,
+          minutes,
+          seconds,
+          totalMinutes: hours * 60 + minutes,
+          dayIndex,
+          dateKey,
+          isHolidayOrWeekend: dayIndex === 0 || dayIndex === 6 || JP_HOLIDAYS_2026.has(dateKey),
+          hhmm: `${pad2(hours)}:${pad2(minutes)}`,
+          hhmmss: `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`
+        };
+      }
+    }
+
+    /**
+     * Chuyển chuỗi "HH:MM" (hỗ trợ cả "24:06") thành tổng số phút.
+     */
+    function parseHHMM(str) {
+      const [h, m] = str.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    /**
+     * Định dạng số phút bất kỳ sang chuẩn hiển thị 24h "HH:MM" (tự xoay vòng sau 23:59).
+     */
+    function formatMinutesToHHMM(totalMinutes) {
+      const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+      const h = Math.floor(normalized / 60);
+      const m = normalized % 60;
+      return `${pad2(h)}:${pad2(m)}`;
+    }
+
+    /**
+     * Định dạng nhãn trạng thái theo đúng yêu cầu:
+     * - diff < 0  : "(Trễ Y phút trước)"
+     * - diff === 0: "(Còn 0 phút)"
+     * - 0 < diff < 60: "(Còn X phút)"
+     * - diff >= 60: "(Còn Xg Yp)" (hoặc "(Còn Xg)" nếu chẵn giờ)
+     */
+    function formatStatusText(diffMinutes) {
+      if (diffMinutes < 0) {
+        return `(Trễ ${Math.abs(diffMinutes)} phút trước)`;
+      }
+      if (diffMinutes === 0) {
+        return "(Còn 0 phút)";
+      }
+      if (diffMinutes < 60) {
+        return `(Còn ${diffMinutes} phút)`;
+      }
+      const h = Math.floor(diffMinutes / 60);
+      const m = diffMinutes % 60;
+      return m === 0 ? `(Còn ${h}g)` : `(Còn ${h}g ${m}p)`;
+    }
+
+    /**
+     * Xác định loại lịch ("weekday" hoặc "weekend") cho ngày hiện tại + offsetDays.
+     */
+    function getScheduleKeyForOffset(todayDayIndex, offsetDays) {
+      const dayIdx = (todayDayIndex + offsetDays + 7) % 7;
+      const dateKey = getJSTDateKey(offsetDays);
+      return (dayIdx === 0 || dayIdx === 6 || JP_HOLIDAYS_2026.has(dateKey))
+        ? "weekend"
+        : "weekday";
+    }
+
+    /* ========================================================================
+       TRAIN FILTERING LOGIC (10-MINUTE LATE CUTOFF + MIDNIGHT WRAP-AROUND)
+       ======================================================================== */
+    function getTrainsForRoute(routeKey, refMinutes, todayDayIndex) {
+      const route = TIMETABLES[routeKey];
+      const results = [];
+
+      const yesterdayKey = getScheduleKeyForOffset(todayDayIndex, -1);
+      const todayKey = getScheduleKeyForOffset(todayDayIndex, 0);
+      const tomorrowKey = getScheduleKeyForOffset(todayDayIndex, 1);
+
+      // 1. Kiểm tra các chuyến khuya thuộc ngày hôm qua (vd: 23:55 hoặc 24:06 khi hiện tại 00:00..00:16)
+      for (const timeStr of route[yesterdayKey]) {
+        const depMins = parseHHMM(timeStr);
+        const diff = (depMins - 1440) - refMinutes;
+        // Giữ lại nếu chưa quá 10 phút kể từ giờ tàu chạy (diff >= -10)
+        if (diff >= -MAX_LATE_MINUTES) {
+          results.push({
+            depTime: formatMinutesToHHMM(depMins),
+            arrTime: formatMinutesToHHMM(depMins + route.duration),
+            from: route.from,
+            to: route.to,
+            diff,
+            isTomorrow: false
+          });
+        }
+      }
+
+      // 2. Lấy các chuyến hôm nay thỏa mãn diff >= -10 (ẩn ngay khi Y > 10 phút)
+      for (const timeStr of route[todayKey]) {
+        if (results.length >= TRAINS_PER_CARD) break;
+        const depMins = parseHHMM(timeStr);
+        const diff = depMins - refMinutes;
+        if (diff >= -MAX_LATE_MINUTES) {
+          results.push({
+            depTime: formatMinutesToHHMM(depMins),
+            arrTime: formatMinutesToHHMM(depMins + route.duration),
+            from: route.from,
+            to: route.to,
+            diff,
+            isTomorrow: false
+          });
+        }
+      }
+
+      // 3. Nếu cuối ngày còn ít hơn 5 chuyến, nối tiếp các chuyến sáng sớm ngày mai (+1440 phút)
+      if (results.length < TRAINS_PER_CARD) {
+        for (const timeStr of route[tomorrowKey]) {
+          if (results.length >= TRAINS_PER_CARD) break;
+          const depMins = parseHHMM(timeStr);
+          if (depMins >= 1440) continue; // Bỏ qua mốc 24:xx của ngày mai
+          const diff = (1440 - refMinutes) + depMins;
+          results.push({
+            depTime: formatMinutesToHHMM(depMins),
+            arrTime: formatMinutesToHHMM(depMins + route.duration),
+            from: route.from,
+            to: route.to,
+            diff,
+            isTomorrow: true
+          });
+        }
+      }
+
+      return results.slice(0, TRAINS_PER_CARD);
+    }
+
+    /* ========================================================================
+       RENDER FUNCTIONS
+       ======================================================================== */
+    function renderRouteCard(cardDom, routeKey, refMinutes, todayDayIndex) {
+      const route = TIMETABLES[routeKey];
+      const trains = getTrainsForRoute(routeKey, refMinutes, todayDayIndex);
+
+      cardDom.title.textContent = `${route.from} → ${route.to}`;
+
+      // Tìm chuyến sắp chạy ĐẦU TIÊN (diff >= 0) để nhấn màu xanh JR
+      const firstUpcomingIdx = trains.findIndex((t) => t.diff >= 0);
+      const fragment = document.createDocumentFragment();
+
+      trains.forEach((train, idx) => {
+        const li = document.createElement("li");
+        const isOverdue = train.diff < 0;
+        const isNextUpcoming = idx === firstUpcomingIdx;
+
+        let rowClass = "train-row";
+        if (isOverdue) {
+          rowClass += " is-overdue";
+        } else if (isNextUpcoming) {
+          rowClass += " is-next";
+        }
+        li.className = rowClass;
+
+        // Định dạng chuẩn bên trái: {Giờ đi} - {Ga đi} - {Ga đến} {Giờ đến}
+        const scheduleDiv = document.createElement("div");
+        scheduleDiv.className = "train-schedule";
+
+        const depEl = document.createElement("span");
+        depEl.className = "dep-time";
+        depEl.textContent = train.depTime;
+
+        const sep1 = document.createElement("span");
+        sep1.className = "sep";
+        sep1.textContent = "-";
+
+        const fromEl = document.createElement("span");
+        fromEl.className = "station-name";
+        fromEl.textContent = train.from;
+
+        const sep2 = document.createElement("span");
+        sep2.className = "sep";
+        sep2.textContent = "-";
+
+        const toEl = document.createElement("span");
+        toEl.className = "station-name";
+        toEl.textContent = train.to;
+
+        const arrEl = document.createElement("span");
+        arrEl.className = "arr-time";
+        arrEl.textContent = train.arrTime;
+
+        scheduleDiv.append(depEl, sep1, fromEl, sep2, toEl, arrEl);
+
+        // Trạng thái bên phải: [Mai?] (Còn X phút) / (Trễ Y phút trước)
+        const statusWrap = document.createElement("div");
+        statusWrap.className = "train-status-wrap";
+
+        if (train.isTomorrow) {
+          const tomorrowEl = document.createElement("span");
+          tomorrowEl.className = "tomorrow-tag";
+          tomorrowEl.textContent = "Mai";
+          statusWrap.appendChild(tomorrowEl);
+        }
+
+        const statusEl = document.createElement("span");
+        let statusClass = "status-text";
+        if (isOverdue) {
+          statusClass += " is-overdue";
+        } else if (train.diff === 0) {
+          statusClass += " is-now";
+        }
+        statusEl.className = statusClass;
+        statusEl.textContent = formatStatusText(train.diff);
+
+        statusWrap.appendChild(statusEl);
+        li.append(scheduleDiv, statusWrap);
+        fragment.appendChild(li);
+      });
+
+      cardDom.list.innerHTML = "";
+      cardDom.list.appendChild(fragment);
+    }
+
+    function renderAll(forceRenderLists = false) {
+      const jst = getJSTNow();
+
+      // Luôn cập nhật đồng hồ JST mỗi giây
+      dom.clock.textContent = jst.hhmmss;
+      dom.scheduleBadge.textContent = jst.isHolidayOrWeekend
+        ? "Cuối tuần - Lễ · 土休日"
+        : "Ngày thường · 平日";
+
+      // Đồng bộ trạng thái ô chọn giờ và nút "Hiện tại"
+      if (state.isLive) {
+        if (document.activeElement !== dom.timePicker && dom.timePicker.value !== jst.hhmm) {
+          dom.timePicker.value = jst.hhmm;
+        }
+        dom.timePicker.classList.remove("is-custom");
+        dom.nowBtn.classList.add("is-live");
+        dom.nowBtn.setAttribute("aria-pressed", "true");
+      } else {
+        dom.timePicker.classList.add("is-custom");
+        dom.nowBtn.classList.remove("is-live");
+        dom.nowBtn.setAttribute("aria-pressed", "false");
+      }
+
+      const refMinutes = state.isLive ? jst.totalMinutes : state.customMinutes;
+      const route1Key = state.card1Reversed ? "taka_mae" : "mae_taka";
+      const route2Key = state.card2Reversed ? "ise_mae" : "mae_ise";
+
+      // Chỉ vẽ lại 2 danh sách tàu khi phút/ngày/tuyến thay đổi để cuộn cực mượt trên điện thoại
+      const listKey = `${jst.dateKey}|${refMinutes}|${route1Key}|${route2Key}`;
+      if (forceRenderLists || listKey !== state.lastListKey) {
+        state.lastListKey = listKey;
+        renderRouteCard(dom.card1, route1Key, refMinutes, jst.dayIndex);
+        renderRouteCard(dom.card2, route2Key, refMinutes, jst.dayIndex);
+      }
+    }
+
+    /* ========================================================================
+       EVENT LISTENERS
+       ======================================================================== */
+    function handleSwap(cardNum) {
+      const cardDom = cardNum === 1 ? dom.card1 : dom.card2;
+      if (cardNum === 1) {
+        state.card1Reversed = !state.card1Reversed;
+        cardDom.swapBtn.classList.toggle("is-flipped", state.card1Reversed);
+      } else {
+        state.card2Reversed = !state.card2Reversed;
+        cardDom.swapBtn.classList.toggle("is-flipped", state.card2Reversed);
+      }
+
+      cardDom.list.classList.add("is-swapping");
+      setTimeout(() => {
+        renderAll(true);
+        cardDom.list.classList.remove("is-swapping");
+      }, 100);
+    }
+
+    dom.card1.swapBtn.addEventListener("click", () => handleSwap(1));
+    dom.card2.swapBtn.addEventListener("click", () => handleSwap(2));
+
+    function handleCustomTimeInput(val) {
+      if (!val) {
+        state.isLive = true;
+        state.customMinutes = null;
+      } else if (/^\d{2}:\d{2}$/.test(val)) {
+        state.isLive = false;
+        state.customMinutes = parseHHMM(val);
+      }
+      renderAll(true);
+    }
+
+    dom.timePicker.addEventListener("change", (e) => handleCustomTimeInput(e.target.value));
+    dom.timePicker.addEventListener("input", (e) => {
+      if (/^\d{2}:\d{2}$/.test(e.target.value)) {
+        handleCustomTimeInput(e.target.value);
+      }
+    });
+
+    dom.nowBtn.addEventListener("click", () => {
+      state.isLive = true;
+      state.customMinutes = null;
+      const jst = getJSTNow();
+      dom.timePicker.value = jst.hhmm;
+      renderAll(true);
+    });
+
+    // Cập nhật ngay khi mở khóa màn hình hoặc quay lại tab trình duyệt
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        renderAll(true);
+      }
+    });
+
+    /* ========================================================================
+       INITIALIZE
+       ======================================================================== */
+    renderAll(true);
+    setInterval(() => renderAll(false), 1000);
+  </script>
+</body>
+</html>
